@@ -36,7 +36,7 @@ class Data(Dataset):
     self.multiscale = multiscale
     self.shuffle_order = shuffle_order
     assert (mode == 'training' or
-            mode == 'testing'), 'mode should be training or testing'
+            mode == 'testing' or mode == 'validation'), 'mode should be training or testing'
     self.mode = mode
 
     if shuffle_order is True and self.mode == 'testing':
@@ -47,11 +47,11 @@ class Data(Dataset):
 
     if self.mode == 'testing':
       self.deepWB_T = dwb.deepWBnet()
-      self.deepWB_T.load_state_dict(torch.load('DeepWB/models/net_t.pth'))
-      self.deepWB_S = dwb.deepWBnet()
-      self.deepWB_S.load_state_dict(torch.load('DeepWB/models/net_s.pth'))
-      self.deepWB_T.eval().to(device='cuda')
-      self.deepWB_S.eval().to(device='cuda')
+      # self.deepWB_T.load_state_dict(torch.load('DeepWB/models/net_t.pth'))
+      # self.deepWB_S = dwb.deepWBnet()
+      # self.deepWB_S.load_state_dict(torch.load('DeepWB/models/net_s.pth'))
+      # self.deepWB_T.eval().to(device='cuda')
+      # self.deepWB_S.eval().to(device='cuda')
 
 
     logging.info(f'Creating dataset with {len(self.imgfiles)} examples')
@@ -89,38 +89,43 @@ class Data(Dataset):
       else:
         t_size = self.t_size
 
-      d_img = ops.imresize.imresize(d_img, output_shape=(t_size, t_size))
+      if self.mode == 'training':
+        d_img = ops.imresize.imresize(d_img, output_shape=(t_size, t_size))
 
-      gt_img_file = path.basename(base_name) + 'G_AS.png'
+      gt_img_file = base_name + 'G_AS.png'
 
-      gt_img_file = path.join(path.split(path.dirname(D_img_file))[0],
-                              'ground truth images', gt_img_file)
+      # gt_img_file = path.join(path.split(path.dirname(D_img_file))[0], 'ground truth images', gt_img_file)
 
       gt_img = ops.imread(gt_img_file)
 
-      gt_img = ops.imresize.imresize(gt_img, output_shape=(t_size, t_size))
+      if self.mode  == 'training':
+        gt_img = ops.imresize.imresize(gt_img, output_shape=(t_size, t_size))
 
       s_img_file = base_name + 'S_CS.png'
       s_img = ops.imread(s_img_file)
 
-      s_img = ops.imresize.imresize(s_img, output_shape=(t_size, t_size))
+      if self.mode == 'training':
+        s_img = ops.imresize.imresize(s_img, output_shape=(t_size, t_size))
 
       t_img_file = base_name + 'T_CS.png'
       t_img = ops.imread(t_img_file)
 
-      t_img = ops.imresize.imresize(t_img, output_shape=(t_size, t_size))
+      if self.mode == 'training':
+        t_img = ops.imresize.imresize(t_img, output_shape=(t_size, t_size))
 
       if 'F' in self.wb_settings:
         f_img_file = base_name + 'F_CS.png'
         f_img = ops.imread(f_img_file)
-        f_img = ops.imresize.imresize(f_img, output_shape=(t_size, t_size))
+        if self.mode == 'training':
+          f_img = ops.imresize.imresize(f_img, output_shape=(t_size, t_size))
       else:
         f_img = None
 
       if 'C' in self.wb_settings:
         c_img_file = base_name + 'C_CS.png'
         c_img = ops.imread(c_img_file)
-        c_img = ops.imresize.imresize(c_img, output_shape=(t_size, t_size))
+        if self.mode == 'training':
+          c_img = ops.imresize.imresize(c_img, output_shape=(t_size, t_size))
       else:
         c_img = None
 
@@ -138,22 +143,23 @@ class Data(Dataset):
         else:
           d_img, s_img, t_img, gt_img = ops.aug(d_img, s_img, t_img, gt_img)
 
-      if f_img is not None and c_img is not None:
-        d_img, s_img, t_img, f_img, c_img, gt_img = ops.extract_patch(
-          d_img, s_img, t_img, f_img, c_img, gt_img, patch_size=self.patch_size,
-          patch_number=self.patch_number)
-      elif f_img is not None:
-        d_img, s_img, t_img, f_img, gt_img = ops.extract_patch(
-          d_img, s_img, t_img, f_img, gt_img, patch_size=self.patch_size,
-          patch_number=self.patch_number)
-      elif c_img is not None:
-        d_img, s_img, t_img, c_img, gt_img = ops.extract_patch(
-          d_img, s_img, t_img, c_img, gt_img, patch_size=self.patch_size,
-          patch_number=self.patch_number)
-      else:
-        d_img, s_img, t_img, gt_img = ops.extract_patch(
-          d_img, s_img, t_img, gt_img, patch_size=self.patch_size,
-          patch_number=self.patch_number)
+      if self.mode == 'training':
+        if f_img is not None and c_img is not None:
+          d_img, s_img, t_img, f_img, c_img, gt_img = ops.extract_patch(
+            d_img, s_img, t_img, f_img, c_img, gt_img, patch_size=self.patch_size,
+            patch_number=self.patch_number)
+        elif f_img is not None:
+          d_img, s_img, t_img, f_img, gt_img = ops.extract_patch(
+            d_img, s_img, t_img, f_img, gt_img, patch_size=self.patch_size,
+            patch_number=self.patch_number)
+        elif c_img is not None:
+          d_img, s_img, t_img, c_img, gt_img = ops.extract_patch(
+            d_img, s_img, t_img, c_img, gt_img, patch_size=self.patch_size,
+            patch_number=self.patch_number)
+        else:
+          d_img, s_img, t_img, gt_img = ops.extract_patch(
+            d_img, s_img, t_img, gt_img, patch_size=self.patch_size,
+            patch_number=self.patch_number)
 
       d_img = ops.to_tensor(d_img, dims=3 + int(self.aug))
       s_img = ops.to_tensor(s_img, dims=3 + int(self.aug))
@@ -284,7 +290,6 @@ class Data(Dataset):
         else:
           c_img = None
 
-
       d_img = ops.to_tensor(d_img, dims=3)
       s_img = ops.to_tensor(s_img, dims=3)
       t_img = ops.to_tensor(t_img, dims=3)
@@ -355,9 +360,8 @@ class Data(Dataset):
   def assert_files(files, wb_settings):
     for file in files:
       base_name = ops.get_basename(file)
-      gt_img_file = path.basename(base_name) + 'G_AS.png'
-      gt_img_file = path.join(path.split(path.dirname(file))[0],
-                              'ground truth images', gt_img_file)
+      gt_img_file = base_name + 'G_AS.png'
+      # gt_img_file = path.join(path.split(path.dirname(file))[0], 'ground truth images', gt_img_file)
       s_img_file = base_name + 'S_CS.png'
       t_img_file = base_name + 'T_CS.png'
       paths = [file, gt_img_file, s_img_file, t_img_file]
@@ -373,3 +377,12 @@ class Data(Dataset):
         checks = checks & path.exists(curr_path)
       assert checks, 'cannot find WB images match target WB settings'
     return True
+
+
+if __name__ == "__main__":
+  from glob import glob
+  img_list = Data.load_files('/media/david/media/lsmi_mask/sony/train/')
+  dataset = Data(img_list, mode='training', keep_aspect_ratio=True)
+  loader = torch.utils.data.DataLoader(dataset, batch_size=32, shuffle=True)
+  dict = next(iter(loader))
+  print(dict)

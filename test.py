@@ -11,8 +11,6 @@ import torch.nn.functional as F
 from src import weight_refinement as weight_refinement
 
 
-
-
 def test_net(net, device, data_dir, model_name, out_dir, save_weights,
              multi_scale=False, keep_aspect_ratio=False, t_size=128,
              post_process=False, batch_size=32, wb_settings=None):
@@ -154,8 +152,8 @@ def get_args():
                       default=None)
 
   parser.add_argument('-wbs', '--wb-settings', dest='wb_settings', nargs='+',
-                      default=['D', 'S', 'T'])
-                      # default=['D', 'S', 'T', 'F', 'C'])
+                      # default=['D', 'S', 'T'])
+                      default=['D', 'S', 'T', 'F', 'C'])
 
   parser.add_argument('-sw', '--save-weights', dest='save_weights',
                       default=True, type=bool)
@@ -172,7 +170,7 @@ def get_args():
                       default=True, type=bool)
 
   parser.add_argument('-ted', '--testing-dir', dest='tedir',
-                      default='./data/images/',
+                      default='/media/david/media/lsmi_mask/sony/test',
                       help='Testing directory')
 
   parser.add_argument('-od', '--outdir', dest='outdir',
@@ -188,7 +186,7 @@ def get_args():
                            'multi-scale is used, then 384 is recommended.')
 
   parser.add_argument('-mn', '--model-name', dest='model_name', type=str,
-                      default='WB_model_p_64_D_S_T',
+                      default='WB_model_p_64_D_S_T_F_C_4',
                       #default='WB_model_p_64_D_S_T',
                       help='Model name')
 

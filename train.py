@@ -10,6 +10,7 @@ from src import wb_net
 import random
 from src import ops
 import torch.nn.functional as F
+from metric import deltaE00, calc_mae, trimean
 
 try:
   from torch.utils.tensorboard import SummaryWriter
@@ -34,28 +35,31 @@ def train_net(net, device, data_dir, val_dir=None, epochs=140,
 
   dir_checkpoint = 'checkpoints_model/'  # check points directory
 
+  TRAIN_PATH = '/media/david/media/lsmi_mask/sony/train/'
+  VALID_PATH = '/media/david/media/lsmi_mask/sony/valid/'
+
+  input_files = dataset.Data.load_files(TRAIN_PATH)
+  val_files = dataset.Data.load_files(VALID_PATH)
 
   SMOOTHNESS_WEIGHT = smooth_weight
 
-
-  input_files = dataset.Data.load_files(data_dir)
-  random.shuffle(input_files)
-
-  if val_dir is not None:
-    val_files = dataset.Data.load_files(val_dir)
-    random.shuffle(val_files)
-  else:
-    val_ind = round(len(input_files) * 0.1)
-    val_files = input_files[: val_ind]
-    input_files = input_files[val_ind:]
-
-
-  if max_val_files > 0:
-    if max_val_files < len(val_files):
-      val_files = val_files[:max_val_files]
-  if max_tr_files > 0:
-    if max_tr_files < len(input_files):
-      input_files = input_files[:max_tr_files]
+  # input_files = dataset.Data.load_files(data_dir)
+  # random.shuffle(input_files)
+  #
+  # if val_dir is not None:
+  #   val_files = dataset.Data.load_files(val_dir)
+  #   random.shuffle(val_files)
+  # else:
+  #   val_ind = round(len(input_files) * 0.1)
+  #   val_files = input_files[: val_ind]
+  #   input_files = input_files[val_ind:]
+  #
+  # if max_val_files > 0:
+  #   if max_val_files < len(val_files):
+  #     val_files = val_files[:max_val_files]
+  # if max_tr_files > 0:
+  #   if max_tr_files < len(input_files):
+  #     input_files = input_files[:max_tr_files]
 
   dataset.Data.assert_files(input_files, wb_settings=wb_settings)
   dataset.Data.assert_files(val_files, wb_settings=wb_settings)
@@ -72,7 +76,6 @@ def train_net(net, device, data_dir, val_dir=None, epochs=140,
 
   val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=True,
                           num_workers=6, pin_memory=True)
-
 
   if use_tb:  # if TensorBoard is used
     writer = SummaryWriter(log_dir='runs/' + model_name,
@@ -119,6 +122,7 @@ def train_net(net, device, data_dir, val_dir=None, epochs=140,
     epoch_smoothness_loss = 0
     epoch_rec_loss = 0
 
+    best_validation_deltae = 50
 
     with tqdm(total=len(train_set), desc=f'Epoch {epoch + 1} / {epochs}',
               unit='img') as pbar:
@@ -153,7 +157,6 @@ def train_net(net, device, data_dir, val_dir=None, epochs=140,
 
         epoch_rec_loss += py_rec_loss
         epoch_loss += py_loss
-
 
 
         optimizer.zero_grad()
@@ -222,7 +225,11 @@ def train_net(net, device, data_dir, val_dir=None, epochs=140,
 
     if (epoch + 1) % val_freq == 0:
       logging.info('Validation...')
-      validation(net=net, loader=val_loader, writer=writer, step=global_step)
+      validation_metrics = validation(net=net, loader=val_loader, writer=writer, step=global_step)
+      if validation_metrics['deltaE_mean'] < best_validation_deltae:
+        best_validation_deltae = validation_metrics['deltaE_mean']
+        print('Best validation deltaE:', best_validation_deltae)
+        print('Epoch number:', epoch + 1)
 
     # save a checkpoint
     if save_cp and (epoch + 1) % chkpoint_period == 0:
@@ -247,10 +254,19 @@ def train_net(net, device, data_dir, val_dir=None, epochs=140,
   logging.info('End of training')
 
 
-def validation(net, loader, writer, step):
+def validation(net, loader, writer, step, split='validation'):
   net.eval()
   index = random.randint(0, len(loader) - 1)
   val_loss = 0
+
+  deltaE = deltaE00()
+  de_values = []
+
+  MSE = torch.nn.MSELoss(reduction='sum')
+  mse_values = []
+
+  mae_values = []
+
   for b, batch in enumerate(loader):
     img = batch['image']
     img = img[:, 0, :, :, :]
@@ -266,46 +282,55 @@ def validation(net, loader, writer, step):
 
     val_loss += val_loss.item()
 
-    if b == index and writer is not None:
-      # for visualization
-      vis_weights = (weights - torch.min(weights)) / (
-          ops.EPS + torch.max(weights) - torch.min(weights))
-      writer.add_images('Input (1) [val]', img[:, 0:3, :, :], step)
-      writer.add_images('Weight (1) [val]',
-                        torch.unsqueeze(vis_weights[:, 0, :, :], dim=1),
-                        step)
-      writer.add_images('Input (2) [val]', img[:, 3:6, :, :], step)
-      writer.add_images('Weight (2) [val]',
-                        torch.unsqueeze(vis_weights[:, 1, :, :], dim=1),
-                        step)
-      writer.add_images('Input (3) [val]', img[:, 6:, :, :], step)
-      writer.add_images('Weight (3) [val]',
-                        torch.unsqueeze(vis_weights[:, 2, :, :], dim=1),
-                        step)
+    for p, g in zip(result, gt):
+        de_values.append(deltaE.compute(p.permute(1, 2, 0).cpu().detach().numpy(), g.permute(1, 2, 0).cpu().detach().numpy()))
+        mae_values.append(calc_mae(p.permute(1, 2, 0).cpu().detach().numpy(), g.permute(1, 2, 0).cpu().detach().numpy()))
+        mse_values.append(MSE(p, g).item())
 
-      if vis_weights.shape[1] == 4:
-        writer.add_images('Input (4) [val]', img[:, 9:12, :, :], step)
-        writer.add_images('Weight (4) [val]',
-                          torch.unsqueeze(vis_weights[:, 3, :, :], dim=1),
-                          step)
-      if vis_weights.shape[1] == 5:
-        writer.add_images('Input (4) [val]', img[:, 9:12, :, :], step)
-        writer.add_images('Weight (4) [val]',
-                          torch.unsqueeze(vis_weights[:, 3, :, :], dim=1),
-                          step)
-        writer.add_images('Input (5) [val]', img[:, 12:, :, :], step)
-        writer.add_images('Weight (5) [val]',
-                          torch.unsqueeze(vis_weights[:, 4, :, :], dim=1),
-                          step)
+    # if b == index and writer is not None:
+    #   # for visualization
+    #   vis_weights = (weights - torch.min(weights)) / (
+    #       ops.EPS + torch.max(weights) - torch.min(weights))
+    #   writer.add_images('Input (1) [val]', img[:, 0:3, :, :], step)
+    #   writer.add_images('Weight (1) [val]',
+    #                     torch.unsqueeze(vis_weights[:, 0, :, :], dim=1),
+    #                     step)
+    #   writer.add_images('Input (2) [val]', img[:, 3:6, :, :], step)
+    #   writer.add_images('Weight (2) [val]',
+    #                     torch.unsqueeze(vis_weights[:, 1, :, :], dim=1),
+    #                     step)
+    #   writer.add_images('Input (3) [val]', img[:, 6:9, :, :], step)
+    #   writer.add_images('Weight (3) [val]',
+    #                     torch.unsqueeze(vis_weights[:, 2, :, :], dim=1),
+    #                     step)
+    #
+    #   if vis_weights.shape[1] == 4:
+    #     writer.add_images('Input (4) [val]', img[:, 9:12, :, :], step)
+    #     writer.add_images('Weight (4) [val]',
+    #                       torch.unsqueeze(vis_weights[:, 3, :, :], dim=1),
+    #                       step)
+    #   if vis_weights.shape[1] == 5:
+    #     writer.add_images('Input (4) [val]', img[:, 9:12, :, :], step)
+    #     writer.add_images('Weight (4) [val]',
+    #                       torch.unsqueeze(vis_weights[:, 3, :, :], dim=1),
+    #                       step)
+    #     writer.add_images('Input (5) [val]', img[:, 12:, :, :], step)
+    #     writer.add_images('Weight (5) [val]',
+    #                       torch.unsqueeze(vis_weights[:, 4, :, :], dim=1),
+    #                       step)
+    #
+    #   writer.add_images('Result [val]', result, step)
+    #   writer.add_images('GT [val]', gt, step)
 
-      writer.add_images('Result [val]', result, step)
-      writer.add_images('GT [val]', gt, step)
-
-  print(f'Validation loss (batch): {val_loss / len(loader)}')
+  print(f'{split} loss (batch): {val_loss / len(loader)}')
   if writer is not None:
-    writer.add_scalar('Validation Loss', val_loss / len(loader), step)
+    writer.add_scalar(f'{split} Loss', val_loss / len(loader), step)
 
   net.train()
+
+  return {'deltaE_mean': np.mean(de_values), 'deltaE_median': np.median(de_values), 'deltaE_trimean': trimean(de_values),
+          'mse_mean': np.mean(mse_values), 'mse_median': np.median(mse_values), 'mse_trimean': trimean(mse_values),
+          'mae_mean': np.mean(mae_values), 'mae_median': np.median(mae_values), 'mae_trimean': trimean(mae_values)}
 
 
 def get_args():
