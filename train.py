@@ -23,7 +23,7 @@ from src import dataset
 from torch.utils.data import DataLoader
 
 
-def train_net(net, device, data_dir, val_dir=None, epochs=140,
+def train_net(net, device, train_path, valid_path, epochs=140,
               batch_size=32, lr=0.001, l2reg=0.00001, grad_clip_value=0,
               chkpoint_period=10, val_freq=1, smooth_weight=0.01,
               multiscale=False, wb_settings=None, shuffle_order=True,
@@ -35,11 +35,8 @@ def train_net(net, device, data_dir, val_dir=None, epochs=140,
 
   dir_checkpoint = 'checkpoints_model/'  # check points directory
 
-  TRAIN_PATH = '/media/david/media/lsmi_mask/sony/train/'
-  VALID_PATH = '/media/david/media/lsmi_mask/sony/valid/'
-
-  input_files = dataset.Data.load_files(TRAIN_PATH)
-  val_files = dataset.Data.load_files(VALID_PATH)
+  input_files = dataset.Data.load_files(train_path)
+  val_files = dataset.Data.load_files(valid_path)
 
   SMOOTHNESS_WEIGHT = smooth_weight
 
@@ -418,6 +415,9 @@ def get_args():
   parser.add_argument('-mn', '--model-name', dest='model_name', type=str,
                       default='WB_model', help='Model name')
 
+  parser.add_argument('-tp', '--train-path', dest='train_path', type=str, default='/media/david/media/lsmi_mask/sony/train')
+  parser.add_argument('-vp', '--valid-path', dest='valid_path', type=str, default='/media/david/media/lsmi_mask/sony/valid')
+
   return parser.parse_args()
 
 if __name__ == '__main__':
@@ -459,7 +459,7 @@ if __name__ == '__main__':
 
 
   try:
-    train_net(net=net, device=device, data_dir=args.trdir,
+    train_net(net=net, device=device, train_path=args.train_path, valid_path=args.valid_path,
               patch_number=args.patch_number,
               multiscale=args.multiscale,
               smooth_weight=args.smoothness_weight,
