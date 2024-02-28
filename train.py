@@ -112,6 +112,7 @@ def train_net(net, device, train_path, valid_path, epochs=140,
 
   x_kernel, y_kernel = ops.get_sobel_kernel(device, chnls=len(wb_settings))
 
+  best_validation_deltae = 50.0
   for epoch in range(epochs):
 
     net.train()
@@ -119,7 +120,6 @@ def train_net(net, device, train_path, valid_path, epochs=140,
     epoch_smoothness_loss = 0
     epoch_rec_loss = 0
 
-    best_validation_deltae = 50
 
     with tqdm(total=len(train_set), desc=f'Epoch {epoch + 1} / {epochs}',
               unit='img') as pbar:
