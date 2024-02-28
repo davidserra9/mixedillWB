@@ -417,14 +417,21 @@ def get_args():
 
   parser.add_argument('-tp', '--train-path', dest='train_path', type=str, default='/media/david/media/lsmi_mask/sony/train')
   parser.add_argument('-vp', '--valid-path', dest='valid_path', type=str, default='/media/david/media/lsmi_mask/sony/valid')
+  parser.add_argument('-dev', '--device', type=str, required=False, help="Device to use (default cuda:0)", default="0")
 
   return parser.parse_args()
 
 if __name__ == '__main__':
-  logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
-  logging.info('Training Mixed-Ill WB correction')
+
   args = get_args()
   device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+  logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s',
+                      handlers=[logging.FileHandler('runs/'+'_'.join(args.wb_settings)+'_p'+str(args.patch_size)+'.log'),
+                                logging.StreamHandler()])
+  logging.info('Training Mixed-Ill WB correction')
+
+  os.environ["CUDA_VISIBLE_DEVICES"] = str(args.device)
+
   if device.type != 'cpu':
     torch.cuda.set_device(args.gpu)
 
