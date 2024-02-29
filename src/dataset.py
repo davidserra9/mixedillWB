@@ -53,7 +53,6 @@ class Data(Dataset):
       # self.deepWB_T.eval().to(device='cuda')
       # self.deepWB_S.eval().to(device='cuda')
 
-
     logging.info(f'Creating dataset with {len(self.imgfiles)} examples')
 
   def __len__(self):
@@ -98,34 +97,33 @@ class Data(Dataset):
 
       gt_img = ops.imread(gt_img_file)
 
-      if self.mode  == 'training':
-        gt_img = ops.imresize.imresize(gt_img, output_shape=(t_size, t_size))
+      gt_img = ops.imresize.imresize(gt_img, output_shape=(t_size, t_size))
 
-      s_img_file = base_name + 'S_CS.png'
-      s_img = ops.imread(s_img_file)
-
-      if self.mode == 'training':
+      if 'S' in self.wb_settings:
+        s_img_file = base_name + 'S_CS.png'
+        s_img = ops.imread(s_img_file)
         s_img = ops.imresize.imresize(s_img, output_shape=(t_size, t_size))
+      else:
+        s_img = None
 
-      t_img_file = base_name + 'T_CS.png'
-      t_img = ops.imread(t_img_file)
-
-      if self.mode == 'training':
+      if 'T' in self.wb_settings:
+        t_img_file = base_name + 'T_CS.png'
+        t_img = ops.imread(t_img_file)
         t_img = ops.imresize.imresize(t_img, output_shape=(t_size, t_size))
+      else:
+        t_img = None
 
       if 'F' in self.wb_settings:
         f_img_file = base_name + 'F_CS.png'
         f_img = ops.imread(f_img_file)
-        if self.mode == 'training':
-          f_img = ops.imresize.imresize(f_img, output_shape=(t_size, t_size))
+        f_img = ops.imresize.imresize(f_img, output_shape=(t_size, t_size))
       else:
         f_img = None
 
       if 'C' in self.wb_settings:
         c_img_file = base_name + 'C_CS.png'
         c_img = ops.imread(c_img_file)
-        if self.mode == 'training':
-          c_img = ops.imresize.imresize(c_img, output_shape=(t_size, t_size))
+        c_img = ops.imresize.imresize(c_img, output_shape=(t_size, t_size))
       else:
         c_img = None
 
