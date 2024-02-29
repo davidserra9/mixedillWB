@@ -155,14 +155,9 @@ class Data(Dataset):
           d_img, f_img, c_img, gt_img = ops.aug(
               d_img, f_img, c_img, gt_img)
 
-        elif f_img is not None:
-          d_img, s_img, t_img, f_img, gt_img = ops.aug(
-            d_img, s_img, t_img, f_img, gt_img)
-        elif c_img is not None:
-          d_img, s_img, t_img, c_img, gt_img = ops.aug(
-            d_img, s_img, t_img, c_img, gt_img)
+        #DSTCF
         else:
-          d_img, s_img, t_img, gt_img = ops.aug(d_img, s_img, t_img, gt_img)
+          d_img, s_img, t_img, c_img, f_img, gt_img = ops.aug(d_img, s_img, t_img, c_img, f_img, gt_img)
 
       # DST
       if f_img is not None and s_img is not None and c_img is None and t_img is not None:
@@ -192,22 +187,10 @@ class Data(Dataset):
         d_img, f_img, c_img, gt_img = ops.extract_patch(
           d_img, f_img, c_img, gt_img, patch_size=self.patch_size,
             patch_number=self.patch_number)
-
-      elif f_img is not None and c_img is not None:
-        d_img, s_img, t_img, f_img, c_img, gt_img = ops.extract_patch(
-          d_img, s_img, t_img, f_img, c_img, gt_img, patch_size=self.patch_size,
-          patch_number=self.patch_number)
-      elif f_img is not None:
-        d_img, s_img, t_img, f_img, gt_img = ops.extract_patch(
-          d_img, s_img, t_img, f_img, gt_img, patch_size=self.patch_size,
-          patch_number=self.patch_number)
-      elif c_img is not None:
-        d_img, s_img, t_img, c_img, gt_img = ops.extract_patch(
-          d_img, s_img, t_img, c_img, gt_img, patch_size=self.patch_size,
-          patch_number=self.patch_number)
+      #DSTCF
       else:
-        d_img, s_img, t_img, gt_img = ops.extract_patch(
-          d_img, s_img, t_img, gt_img, patch_size=self.patch_size,
+        d_img, s_img, t_img, c_img, f_img, gt_img = ops.extract_patch(
+          d_img, s_img, t_img, c_img, f_img, gt_img, patch_size=self.patch_size,
           patch_number=self.patch_number)
 
       d_img = ops.to_tensor(d_img, dims=3 + int(self.aug))
