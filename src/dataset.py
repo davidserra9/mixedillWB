@@ -97,7 +97,6 @@ class Data(Dataset):
       gt_img = ops.imread(gt_img_file)
       gt_img = ops.imresize.imresize(gt_img, output_shape=(t_size, t_size))
 
-      print(self.wb_settings)
       if 'S' in self.wb_settings:
         s_img_file = base_name + 'S_CS.png'
         s_img = ops.imread(s_img_file)
@@ -129,8 +128,6 @@ class Data(Dataset):
 
       if self.aug:
         #DSF
-        print(type(d_img), type(s_img), type(f_img), type(t_img), type(c_img), type(gt_img))
-        print(f_img is not None, s_img is not None, c_img is None, t_img is None)
         if f_img is not None and s_img is not None and c_img is None and t_img is None:
           d_img, s_img, f_img, gt_img = ops.aug(
               d_img, s_img, f_img, gt_img)

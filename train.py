@@ -225,8 +225,8 @@ def train_net(net, device, train_path, valid_path, epochs=140,
       validation_metrics = validation(net=net, loader=val_loader, writer=writer, step=global_step)
       if validation_metrics['deltaE_mean'] < best_validation_deltae:
         best_validation_deltae = validation_metrics['deltaE_mean']
-        print('Best validation deltaE:', best_validation_deltae)
-        print('Epoch number:', epoch + 1)
+        logging.info('Best validation deltaE:', best_validation_deltae)
+        logging.info('Epoch number:', epoch + 1)
 
     # save a checkpoint
     if save_cp and (epoch + 1) % chkpoint_period == 0:
@@ -418,6 +418,7 @@ def get_args():
   parser.add_argument('-tp', '--train-path', dest='train_path', type=str, default='/media/david/media/lsmi_mask/sony/train')
   parser.add_argument('-vp', '--valid-path', dest='valid_path', type=str, default='/media/david/media/lsmi_mask/sony/valid')
   parser.add_argument('-dev', '--device', type=str, required=False, help="Device to use (default cuda:0)", default="0")
+  parser.add_argument('-name', dest='name', type=str)
 
   return parser.parse_args()
 
@@ -426,7 +427,7 @@ if __name__ == '__main__':
   args = get_args()
   device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
   logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s',
-                      handlers=[logging.FileHandler('runs/'+'_'.join(args.wb_settings)+'_p'+str(args.patch_size)+'.log'),
+                      handlers=[logging.FileHandler('runs/'+ args.name + '_'.join(args.wb_settings)+'_p'+str(args.patch_size)+'.log'),
                                 logging.StreamHandler()])
   logging.info('Training Mixed-Ill WB correction')
 
@@ -462,8 +463,7 @@ if __name__ == '__main__':
   for wb_setting in args.wb_settings:
     postfix += f'_{wb_setting}'
 
-  model_name = args.model_name + postfix
-
+  model_name = args.name + '_' + args.model_name + postfix
 
   try:
     train_net(net=net, device=device, train_path=args.train_path, valid_path=args.valid_path,
