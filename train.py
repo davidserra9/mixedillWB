@@ -225,8 +225,8 @@ def train_net(net, device, train_path, valid_path, epochs=140,
       validation_metrics = validation(net=net, loader=val_loader, writer=writer, step=global_step)
       if validation_metrics['deltaE_mean'] < best_validation_deltae:
         best_validation_deltae = validation_metrics['deltaE_mean']
-        logging.info('Best validation deltaE:', best_validation_deltae)
-        logging.info('Epoch number:', epoch + 1)
+        logging.info(f'Best validation deltaE: {best_validation_deltae:.2f}')
+        logging.info(f'Epoch number: {epoch + 1}')
 
     # save a checkpoint
     if save_cp and (epoch + 1) % chkpoint_period == 0:
