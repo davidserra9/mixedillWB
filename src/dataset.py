@@ -129,9 +129,9 @@ class Data(Dataset):
 
 
       if self.aug:
-        if f_img is not None and c_img is not None:
-          d_img, s_img, t_img, f_img, c_img, gt_img = ops.aug(
-            d_img, s_img, t_img, f_img, c_img, gt_img)
+        if f_img is not None and s_img is not None:
+          d_img, s_img, t_img, f_img, gt_img = ops.aug(
+              d_img, s_img, t_img, f_img, gt_img)
         elif f_img is not None:
           d_img, s_img, t_img, f_img, gt_img = ops.aug(
             d_img, s_img, t_img, f_img, gt_img)
