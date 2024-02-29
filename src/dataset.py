@@ -142,27 +142,30 @@ class Data(Dataset):
         else:
           d_img, s_img, t_img, gt_img = ops.aug(d_img, s_img, t_img, gt_img)
 
-      if self.mode == 'training':
-        if s_img is not None and f_img is not None:
-            d_img, s_img, t_img, f_img, gt_img = ops.extract_patch(
-                d_img, s_img, t_img, f_img, gt_img, patch_size=self.patch_size,
-                patch_number=self.patch_number)
-        if f_img is not None and c_img is not None:
-          d_img, s_img, t_img, f_img, c_img, gt_img = ops.extract_patch(
-            d_img, s_img, t_img, f_img, c_img, gt_img, patch_size=self.patch_size,
+      if f_img is not None and s_img is not None:
+        d_img, s_img, f_img, gt_img = ops.extract_patch(
+            d_img, s_img, f_img, gt_img, patch_size=self.patch_size,
             patch_number=self.patch_number)
-        elif f_img is not None:
+      if s_img is not None and f_img is not None:
           d_img, s_img, t_img, f_img, gt_img = ops.extract_patch(
-            d_img, s_img, t_img, f_img, gt_img, patch_size=self.patch_size,
-            patch_number=self.patch_number)
-        elif c_img is not None:
-          d_img, s_img, t_img, c_img, gt_img = ops.extract_patch(
-            d_img, s_img, t_img, c_img, gt_img, patch_size=self.patch_size,
-            patch_number=self.patch_number)
-        else:
-          d_img, s_img, t_img, gt_img = ops.extract_patch(
-            d_img, s_img, t_img, gt_img, patch_size=self.patch_size,
-            patch_number=self.patch_number)
+              d_img, s_img, t_img, f_img, gt_img, patch_size=self.patch_size,
+              patch_number=self.patch_number)
+      if f_img is not None and c_img is not None:
+        d_img, s_img, t_img, f_img, c_img, gt_img = ops.extract_patch(
+          d_img, s_img, t_img, f_img, c_img, gt_img, patch_size=self.patch_size,
+          patch_number=self.patch_number)
+      elif f_img is not None:
+        d_img, s_img, t_img, f_img, gt_img = ops.extract_patch(
+          d_img, s_img, t_img, f_img, gt_img, patch_size=self.patch_size,
+          patch_number=self.patch_number)
+      elif c_img is not None:
+        d_img, s_img, t_img, c_img, gt_img = ops.extract_patch(
+          d_img, s_img, t_img, c_img, gt_img, patch_size=self.patch_size,
+          patch_number=self.patch_number)
+      else:
+        d_img, s_img, t_img, gt_img = ops.extract_patch(
+          d_img, s_img, t_img, gt_img, patch_size=self.patch_size,
+          patch_number=self.patch_number)
 
       d_img = ops.to_tensor(d_img, dims=3 + int(self.aug))
       s_img = ops.to_tensor(s_img, dims=3 + int(self.aug))
