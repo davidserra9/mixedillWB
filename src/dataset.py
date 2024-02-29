@@ -22,8 +22,8 @@ class Data(Dataset):
       self.wb_settings = ['D', 'T', 'F', 'C', 'S']
     else:
       self.wb_settings = wb_settings
-    assert ('S' in self.wb_settings and 'T' in self.wb_settings and 'D' in
-           self.wb_settings), 'Incorrect WB settings'
+    # assert ('S' in self.wb_settings and 'T' in self.wb_settings and 'D' in
+    #        self.wb_settings), 'Incorrect WB settings'
 
     for wb_setting in self.wb_settings:
       assert wb_setting in ['D', 'T', 'F', 'C', 'S']
