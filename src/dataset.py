@@ -99,6 +99,7 @@ class Data(Dataset):
 
       gt_img = ops.imresize.imresize(gt_img, output_shape=(t_size, t_size))
 
+      print(self.wb_settings)
       if 'S' in self.wb_settings:
         s_img_file = base_name + 'S_CS.png'
         s_img = ops.imread(s_img_file)
