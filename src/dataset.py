@@ -132,6 +132,7 @@ class Data(Dataset):
       if self.aug:
         #DSF
         print(type(d_img), type(s_img), type(f_img), type(t_img), type(c_img), type(gt_img))
+        print(f_img is not None, s_img is not None, c_img is None, t_img is not None)
         if f_img is not None and s_img is not None and c_img is None and t_img is not None:
           d_img, s_img, f_img, gt_img = ops.aug(
               d_img, s_img, f_img, gt_img)
