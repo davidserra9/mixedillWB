@@ -130,9 +130,30 @@ class Data(Dataset):
 
 
       if self.aug:
-        if f_img is not None and s_img is not None:
+        #DSF
+        if f_img is not None and s_img is not None and c_img is None and t_img is not None:
           d_img, s_img, f_img, gt_img = ops.aug(
               d_img, s_img, f_img, gt_img)
+        #DSC
+        elif c_img is not None and s_img is not None and f_img is None and t_img is not None:
+          d_img, s_img, c_img, gt_img = ops.aug(
+              d_img, s_img, c_img, gt_img)
+
+        #DTF
+        elif t_img is not None and f_img is not None and s_img is None and c_img is None:
+          d_img, t_img, f_img, gt_img = ops.aug(
+              d_img, t_img, f_img, gt_img)
+
+        #DTC
+        elif t_img is not None and c_img is not None and s_img is None and f_img is None:
+          d_img, t_img, c_img, gt_img = ops.aug(
+              d_img, t_img, c_img, gt_img)
+
+        #DFC
+        elif f_img is not None and c_img is not None and s_img is None and t_img is None:
+          d_img, f_img, c_img, gt_img = ops.aug(
+              d_img, f_img, c_img, gt_img)
+
         elif f_img is not None:
           d_img, s_img, t_img, f_img, gt_img = ops.aug(
             d_img, s_img, t_img, f_img, gt_img)
@@ -142,15 +163,36 @@ class Data(Dataset):
         else:
           d_img, s_img, t_img, gt_img = ops.aug(d_img, s_img, t_img, gt_img)
 
-      if f_img is not None and s_img is not None:
+      # DST
+      if f_img is not None and s_img is not None and c_img is None and t_img is not None:
         d_img, s_img, f_img, gt_img = ops.extract_patch(
-            d_img, s_img, f_img, gt_img, patch_size=self.patch_size,
+          d_img, s_img, f_img, gt_img, patch_size=self.patch_size,
             patch_number=self.patch_number)
-      if s_img is not None and f_img is not None:
-          d_img, s_img, t_img, f_img, gt_img = ops.extract_patch(
-              d_img, s_img, t_img, f_img, gt_img, patch_size=self.patch_size,
-              patch_number=self.patch_number)
-      if f_img is not None and c_img is not None:
+      # DSC
+      elif c_img is not None and s_img is not None and f_img is None and t_img is not None:
+        d_img, s_img, c_img, gt_img = ops.extract_patch(
+          d_img, s_img, c_img, gt_img, patch_size=self.patch_size,
+            patch_number=self.patch_number)
+
+      #DTF
+      elif t_img is not None and f_img is not None and s_img is None and c_img is None:
+        d_img, t_img, f_img, gt_img = ops.extract_patch(
+          d_img, t_img, f_img, gt_img, patch_size=self.patch_size,
+            patch_number=self.patch_number)
+
+      #DTC
+      elif t_img is not None and c_img is not None and s_img is None and f_img is None:
+        d_img, t_img, c_img, gt_img = ops.extract_patch(
+          d_img, t_img, c_img, gt_img, patch_size=self.patch_size,
+            patch_number=self.patch_number)
+
+      #DFC
+      elif f_img is not None and c_img is not None and s_img is None and t_img is None:
+        d_img, f_img, c_img, gt_img = ops.extract_patch(
+          d_img, f_img, c_img, gt_img, patch_size=self.patch_size,
+            patch_number=self.patch_number)
+
+      elif f_img is not None and c_img is not None:
         d_img, s_img, t_img, f_img, c_img, gt_img = ops.extract_patch(
           d_img, s_img, t_img, f_img, c_img, gt_img, patch_size=self.patch_size,
           patch_number=self.patch_number)
@@ -168,9 +210,12 @@ class Data(Dataset):
           patch_number=self.patch_number)
 
       d_img = ops.to_tensor(d_img, dims=3 + int(self.aug))
-      s_img = ops.to_tensor(s_img, dims=3 + int(self.aug))
-      t_img = ops.to_tensor(t_img, dims=3 + int(self.aug))
       gt_img = ops.to_tensor(gt_img, dims=3 + int(self.aug))
+
+      if s_img is not None:
+        s_img = ops.to_tensor(s_img, dims=3 + int(self.aug))
+      if t_img is not None:
+        t_img = ops.to_tensor(t_img, dims=3 + int(self.aug))
       if f_img is not None:
         f_img = ops.to_tensor(f_img, dims=3 + int(self.aug))
       if c_img is not None:
@@ -189,7 +234,11 @@ class Data(Dataset):
           img = torch.cat((img, imgs[order[i]]), dim=1)
 
       else:
-        img = torch.cat((d_img, s_img, t_img), dim=1)
+        img = d_img
+        if s_img is not None:
+          img = torch.cat((img, s_img), dim=1)
+        if t_img is not None:
+          img = torch.cat((img, t_img), dim=1)
         if f_img is not None:
           img = torch.cat((img, f_img), dim=1)
         if c_img is not None:
