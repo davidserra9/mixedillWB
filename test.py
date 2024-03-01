@@ -9,7 +9,12 @@ from src import dataset
 from torch.utils.data import DataLoader
 import torch.nn.functional as F
 from src import weight_refinement as weight_refinement
-
+from metric import deltaE00, calc_mae, trimean
+from glob import glob
+from PIL import Image
+import numpy as np
+import torchvision.transforms.functional as TF
+from tqdm import tqdm
 
 def test_net(net, device, data_dir, model_name, out_dir, save_weights,
              multi_scale=False, keep_aspect_ratio=False, t_size=128,
@@ -48,9 +53,16 @@ def test_net(net, device, data_dir, model_name, out_dir, save_weights,
   if path.exists(out_dir) is not True:
     os.mkdir(out_dir)
 
+  dE = deltaE00()
+  MSE = torch.nn.MSELoss()
+
+  deltae_values = []
+  mse_values = []
+  mae_values = []
+
   with torch.no_grad():
 
-    for batch in test_set:
+    for batch in tqdm(test_set):
 
       img = batch['image']
 
@@ -112,7 +124,16 @@ def test_net(net, device, data_dir, model_name, out_dir, save_weights,
       for i, fname in enumerate(filename):
         result = ops.to_image(out_img[i, :, :, :])
         name = path.join(out_dir, path.basename(fname) + '_WB.png')
+        gt_paths = glob(fname + 'G*')
+        if len(gt_paths) > 1:
+            print(fname, "ERROR")
+        gt = np.array(Image.open(gt_paths[0]).convert('RGB'))
         result.save(name)
+
+        deltae_values.append(dE.compute(np.array(result), gt))
+        mse_values.append(MSE(TF.to_tensor(result), TF.to_tensor(gt)).item() * 255 * 255)
+        mae_values.append(calc_mae(np.array(result), gt))
+
         if save_weights:
           # save weights
           postfix = ['D', 'S', 'T']
@@ -127,7 +148,10 @@ def test_net(net, device, data_dir, model_name, out_dir, save_weights,
                              f'_weight_{postfix[j]}.png')
             weight.save(name)
 
-
+  print('###### MEAN ##### MEDIAN ##### TRIMEAN #####')
+  print(f'DE: {np.mean(deltae_values):.2f} {np.median(deltae_values):.2f} {trimean(deltae_values):.2f}')
+  print(f'MSE: {np.mean(mse_values):.2f} {np.median(mse_values):.2f} {trimean(mse_values):.2f}')
+  print(f'MAE: {np.mean(mae_values):.2f} {np.median(mae_values):.2f} {trimean(mae_values):.2f}')
   logging.info('End of testing')
 
 
@@ -152,8 +176,8 @@ def get_args():
                       default=None)
 
   parser.add_argument('-wbs', '--wb-settings', dest='wb_settings', nargs='+',
-                      # default=['D', 'S', 'T'])
-                      default=['D', 'S', 'T', 'F', 'C'])
+                      default=['D', 'S', 'T'])
+                      # default=['D', 'S', 'T', 'F', 'C'])
 
   parser.add_argument('-sw', '--save-weights', dest='save_weights',
                       default=True, type=bool)

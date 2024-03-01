@@ -124,7 +124,7 @@ def calc_mae(source, target, color_chart_area=0):
   f = np.arccos(angles)
   f[np.isnan(f)] = 0
   f = f * 180 / np.pi
-  return sum(f)
+  return sum(f) / (len(f) - color_chart_area)
 
 def trimean(values):
     sorted_values = sorted(values)
