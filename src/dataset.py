@@ -132,7 +132,7 @@ class Data(Dataset):
           d_img, s_img, t_img, gt_img = ops.aug(
               d_img, s_img, t_img, gt_img)
         #DSF
-        if f_img is not None and s_img is not None and c_img is None and t_img is None:
+        elif f_img is not None and s_img is not None and c_img is None and t_img is None:
           d_img, s_img, f_img, gt_img = ops.aug(
               d_img, s_img, f_img, gt_img)
         #DSC
@@ -166,7 +166,7 @@ class Data(Dataset):
           patch_number=self.patch_number)
 
       # DSF
-      if f_img is not None and s_img is not None and c_img is None and t_img is None:
+      elif f_img is not None and s_img is not None and c_img is None and t_img is None:
         d_img, s_img, f_img, gt_img = ops.extract_patch(
           d_img, s_img, f_img, gt_img, patch_size=self.patch_size,
             patch_number=self.patch_number)
