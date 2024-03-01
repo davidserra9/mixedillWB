@@ -237,9 +237,13 @@ class Data(Dataset):
       return {'image': img, 'gt': gt_img, 'filename': base_name}
 
     else:  # testing mode
-      s_img_file = base_name + 'S_CS.png'
-      t_img_file = base_name + 'T_CS.png'
-      paths = [s_img_file, t_img_file]
+      paths = []
+      if 'S' in self.wb_settings:
+        s_img_file = base_name + 'S_CS.png'
+        paths.append(s_img_file)
+      if 'T' in self.wb_settings:
+        t_img_file = base_name + 'T_CS.png'
+        paths.append(t_img_file)
       if 'F' in self.wb_settings:
         f_img_file = base_name + 'F_CS.png'
         paths.append(f_img_file)
@@ -256,23 +260,30 @@ class Data(Dataset):
           d_img = ops.aspect_ratio_imresize(d_img, max_output=t_size)
         else:
           d_img = ops.imresize.imresize(d_img, output_shape=(t_size, t_size))
-        s_img = ops.imread(s_img_file)
-        if self.keep_aspect_ratio:
-          s_img = ops.aspect_ratio_imresize(s_img, max_output=t_size)
-        else:
-          s_img = ops.imresize.imresize(s_img, output_shape=(t_size, t_size))
-        s_mapping = ops.get_mapping_func(d_img, s_img)
-        full_size_s = ops.apply_mapping_func(full_size_img, s_mapping)
-        full_size_s = ops.outOfGamutClipping(full_size_s)
 
-        t_img = ops.imread(t_img_file)
-        if self.keep_aspect_ratio:
-          t_img = ops.aspect_ratio_imresize(t_img, max_output=t_size)
+        if 'S' in self.wb_settings:
+          s_img = ops.imread(s_img_file)
+          if self.keep_aspect_ratio:
+            s_img = ops.aspect_ratio_imresize(s_img, max_output=t_size)
+          else:
+            s_img = ops.imresize.imresize(s_img, output_shape=(t_size, t_size))
+          s_mapping = ops.get_mapping_func(d_img, s_img)
+          full_size_s = ops.apply_mapping_func(full_size_img, s_mapping)
+          full_size_s = ops.outOfGamutClipping(full_size_s)
         else:
-          t_img = ops.imresize.imresize(t_img, output_shape=(t_size, t_size))
-        t_mapping = ops.get_mapping_func(d_img, t_img)
-        full_size_t = ops.apply_mapping_func(full_size_img, t_mapping)
-        full_size_t = ops.outOfGamutClipping(full_size_t)
+          s_img = None
+
+        if 'T' in self.wb_settings:
+          t_img = ops.imread(t_img_file)
+          if self.keep_aspect_ratio:
+            t_img = ops.aspect_ratio_imresize(t_img, max_output=t_size)
+          else:
+            t_img = ops.imresize.imresize(t_img, output_shape=(t_size, t_size))
+          t_mapping = ops.get_mapping_func(d_img, t_img)
+          full_size_t = ops.apply_mapping_func(full_size_img, t_mapping)
+          full_size_t = ops.outOfGamutClipping(full_size_t)
+        else:
+          t_img = None
 
         if 'F' in self.wb_settings:
           f_img = ops.imread(f_img_file)
@@ -312,12 +323,19 @@ class Data(Dataset):
           t_img = ops.imresize.imresize(t_img, output_shape=(t_size, t_size))
           s_img = ops.imresize.imresize(s_img, output_shape=(t_size, t_size))
 
-        s_mapping = ops.get_mapping_func(d_img, s_img)
-        t_mapping = ops.get_mapping_func(d_img, t_img)
-        full_size_s = ops.apply_mapping_func(full_size_img, s_mapping)
-        full_size_s = ops.outOfGamutClipping(full_size_s)
-        full_size_t = ops.apply_mapping_func(full_size_img, t_mapping)
-        full_size_t = ops.outOfGamutClipping(full_size_t)
+        if 'S' in self.wb_settings:
+          s_mapping = ops.get_mapping_func(d_img, s_img)
+          full_size_s = ops.apply_mapping_func(full_size_img, s_mapping)
+          full_size_s = ops.outOfGamutClipping(full_size_s)
+        else:
+          s_img = None
+
+        if 'T' in self.wb_settings:
+          t_mapping = ops.get_mapping_func(d_img, t_img)
+          full_size_t = ops.apply_mapping_func(full_size_img, t_mapping)
+          full_size_t = ops.outOfGamutClipping(full_size_t)
+        else:
+          t_img = None
 
         if 'F' in self.wb_settings:
           f_img = colorTempInterpolate_w_target(t_img, s_img, 3800)
@@ -335,24 +353,28 @@ class Data(Dataset):
         else:
           c_img = None
 
-      d_img = ops.to_tensor(d_img, dims=3)
-      s_img = ops.to_tensor(s_img, dims=3)
-      t_img = ops.to_tensor(t_img, dims=3)
+      img = ops.to_tensor(d_img, dims=3)
 
+      if s_img is not None:
+        s_img = ops.to_tensor(s_img, dims=3)
+        img = torch.cat((img, s_img), dim=0)
+      if t_img is not None:
+        t_img = ops.to_tensor(t_img, dims=3)
+        img = torch.cat((img, t_img), dim=0)
       if f_img is not None:
         f_img = ops.to_tensor(f_img, dims=3)
-      if c_img is not None:
-        c_img = ops.to_tensor(c_img, dims=3)
-
-      img = torch.cat((d_img, s_img, t_img), dim=0)
-      if f_img is not None:
         img = torch.cat((img, f_img), dim=0)
       if c_img is not None:
+        c_img = ops.to_tensor(c_img, dims=3)
         img = torch.cat((img, c_img), dim=0)
 
       full_size_img = ops.to_tensor(full_size_img, dims=3)
-      full_size_s = ops.to_tensor(full_size_s, dims=3)
-      full_size_t = ops.to_tensor(full_size_t, dims=3)
+
+      if s_img is not None:
+        full_size_s = ops.to_tensor(full_size_s, dims=3)
+
+      if t_img is not None:
+        full_size_t = ops.to_tensor(full_size_t, dims=3)
 
       if c_img is not None:
         full_size_c = ops.to_tensor(full_size_c, dims=3)
@@ -360,21 +382,41 @@ class Data(Dataset):
       if f_img is not None:
         full_size_f = ops.to_tensor(full_size_f, dims=3)
 
-      if c_img is not None and f_img is not None:
-        return {'image': img, 'fs_d_img': full_size_img, 'fs_s_img':
-          full_size_s, 'fs_t_img': full_size_t, 'fs_f_img': full_size_f,
-                'fs_c_img': full_size_c, 'filename': base_name}
-      elif c_img is not None:
-        return {'image': img, 'fs_d_img': full_size_img, 'fs_s_img':
-          full_size_s, 'fs_t_img': full_size_t, 'fs_c_img': full_size_c,
-                'filename': base_name}
-      elif f_img is not None:
-        return {'image': img, 'fs_d_img': full_size_img, 'fs_s_img':
-          full_size_s, 'fs_t_img': full_size_t, 'fs_f_img': full_size_f,
-                'filename': base_name}
-      else:
+      #DST
+      if s_img is not None and t_img is not None and c_img is None and f_img is None:
         return {'image': img, 'fs_d_img': full_size_img, 'fs_s_img':
           full_size_s, 'fs_t_img': full_size_t, 'filename': base_name}
+
+      #DSF
+      elif f_img is not None and s_img is not None and c_img is None and t_img is None:
+        return {'image': img, 'fs_d_img': full_size_img, 'fs_s_img':
+          full_size_s, 'fs_f_img': full_size_f, 'filename': base_name}
+
+      #DSC
+      elif c_img is not None and s_img is not None and f_img is None and t_img is None:
+        return {'image': img, 'fs_d_img': full_size_img, 'fs_s_img':
+            full_size_s, 'fs_c_img': full_size_c, 'filename': base_name}
+
+      #DTF
+      elif t_img is not None and f_img is not None and s_img is None and c_img is None:
+        return {'image': img, 'fs_d_img': full_size_img, 'fs_t_img':
+          full_size_t, 'fs_f_img': full_size_f, 'filename': base_name}
+
+      #DTC
+      elif t_img is not None and c_img is not None and s_img is None and f_img is None:
+        return {'image': img, 'fs_d_img': full_size_img, 'fs_t_img':
+          full_size_t, 'fs_c_img': full_size_c, 'filename': base_name}
+
+      #DFC
+      elif f_img is not None and c_img is not None and s_img is None and t_img is None:
+        return {'image': img, 'fs_d_img': full_size_img, 'fs_f_img':
+          full_size_f, 'fs_c_img': full_size_c, 'filename': base_name}
+
+      #DSTCF
+      else:
+        return {'image': img, 'fs_d_img': full_size_img, 'fs_s_img':
+          full_size_s, 'fs_t_img': full_size_t, 'fs_f_img': full_size_f,
+          'fs_c_img': full_size_c, 'filename': base_name}
 
 
   @staticmethod

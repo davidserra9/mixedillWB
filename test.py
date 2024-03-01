@@ -54,7 +54,7 @@ def test_net(net, device, data_dir, model_name, out_dir, save_weights,
     os.mkdir(out_dir)
 
   dE = deltaE00()
-  MSE = torch.nn.MSELoss()
+  MSE = torch.nn.MSELoss(reduction='sum')
 
   deltae_values = []
   mse_values = []
@@ -85,11 +85,17 @@ def test_net(net, device, data_dir, model_name, out_dir, save_weights,
 
       d_img = batch['fs_d_img']
       d_img = d_img.to(device=device, dtype=torch.float32)
-      s_img = batch['fs_s_img']
-      s_img = s_img.to(device=device, dtype=torch.float32)
-      t_img = batch['fs_t_img']
-      t_img = t_img.to(device=device, dtype=torch.float32)
-      imgs = [d_img, s_img, t_img]
+
+      imgs = [d_img]
+
+      if 'S' in wb_settings:
+        s_img = batch['fs_s_img']
+        s_img = s_img.to(device=device, dtype=torch.float32)
+        imgs.append(s_img)
+      if 'T' in wb_settings:
+        t_img = batch['fs_t_img']
+        t_img = t_img.to(device=device, dtype=torch.float32)
+        imgs.append(t_img)
       if 'F' in wb_settings:
         f_img = batch['fs_f_img']
         f_img = f_img.to(device=device, dtype=torch.float32)
@@ -127,12 +133,15 @@ def test_net(net, device, data_dir, model_name, out_dir, save_weights,
         gt_paths = glob(fname + 'G*')
         if len(gt_paths) > 1:
             print(fname, "ERROR")
+
+        cc_area = int(gt_paths[0].split('_')[-1].split('.')[0])
+
         gt = np.array(Image.open(gt_paths[0]).convert('RGB'))
         result.save(name)
 
-        deltae_values.append(dE.compute(np.array(result), gt))
-        mse_values.append(MSE(TF.to_tensor(result), TF.to_tensor(gt)).item() * 255 * 255)
-        mae_values.append(calc_mae(np.array(result), gt))
+        deltae_values.append(dE.compute(np.array(result), gt, color_chart_area=cc_area))
+        mse_values.append(MSE(TF.to_tensor(result), TF.to_tensor(gt)).item() / (gt.shape[0] * gt.shape[1] * gt.shape[2] - (cc_area*3))*255*255)
+        mae_values.append(calc_mae(np.array(result), gt, cc_area))
 
         if save_weights:
           # save weights

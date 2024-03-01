@@ -39,7 +39,7 @@ class deltaE00():
         self.kc = 1
         self.kh = 1
 
-    def compute(self, img1, img2):
+    def compute(self, img1, img2, color_chart_area=0):
         """ Compute the deltaE00 between two numpy RGB images
         From M. Afifi: https://github.com/mahmoudnafifi/WB_sRGB/blob/master/WB_sRGB_Python/evaluation/calc_deltaE2000.py
         :param img1: numpy RGB image
@@ -108,7 +108,7 @@ class deltaE00():
         de00 = np.sqrt(np.power((dL / klSl), 2) + np.power((dC / kcSc), 2) +
                        np.power((dH / khSh), 2) + RT * (dC / kcSc) * (dH / khSh))
 
-        return np.sum(de00) / (np.shape(de00)[0] - self.color_chart_area)
+        return np.sum(de00) / (np.shape(de00)[0] - color_chart_area)
 
 
 def calc_mae(source, target, color_chart_area=0):
