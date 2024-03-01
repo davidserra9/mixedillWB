@@ -35,8 +35,17 @@ def train_net(net, device, train_path, valid_path, epochs=140,
 
   dir_checkpoint = 'checkpoints_model/'  # check points directory
 
-  input_files = dataset.Data.load_files(train_path)
-  val_files = dataset.Data.load_files(valid_path)
+  sony_train_path = train_path
+  nikon_train_path = sony_train_path.replace('sony', 'nikon')
+
+  sony_valid_path = valid_path
+  nikon_valid_path = sony_valid_path.replace('sony', 'nikon')
+
+  sony_input_files = dataset.Data.load_files(sony_train_path)
+  sony_val_files = dataset.Data.load_files(sony_valid_path)
+
+  nikon_input_files = dataset.Data.load_files(nikon_train_path)
+  nikon_val_files = dataset.Data.load_files(nikon_valid_path)
 
   SMOOTHNESS_WEIGHT = smooth_weight
 
@@ -58,15 +67,28 @@ def train_net(net, device, train_path, valid_path, epochs=140,
   #   if max_tr_files < len(input_files):
   #     input_files = input_files[:max_tr_files]
 
-  dataset.Data.assert_files(input_files, wb_settings=wb_settings)
-  dataset.Data.assert_files(val_files, wb_settings=wb_settings)
+  dataset.Data.assert_files(sony_input_files, wb_settings=wb_settings)
+  dataset.Data.assert_files(sony_val_files, wb_settings=wb_settings)
 
-  train_set = dataset.Data(input_files, patch_size=patch_size,
+  dataset.Data.assert_files(nikon_input_files, wb_settings=wb_settings)
+  dataset.Data.assert_files(nikon_val_files, wb_settings=wb_settings)
+
+  sony_train_set = dataset.Data(sony_input_files, patch_size=patch_size,
                            patch_number=patch_number, multiscale=multiscale,
                            shuffle_order=shuffle_order, wb_settings=wb_settings)
 
-  val_set = dataset.Data(val_files, patch_size=patch_size, patch_number=1,
+  sony_val_set = dataset.Data(sony_val_files, patch_size=patch_size, patch_number=1,
                          shuffle_order=shuffle_order, wb_settings=wb_settings)
+
+  nikon_train_set = dataset.Data(nikon_input_files, patch_size=patch_size,
+                        patch_number=patch_number, multiscale=multiscale,
+                        shuffle_order=shuffle_order, wb_settings=wb_settings)
+
+  nikon_val_set = dataset.Data(nikon_val_files, patch_size=patch_size, patch_number=1,
+                      shuffle_order=shuffle_order, wb_settings=wb_settings)
+
+  train_set = torch.utils.data.ConcatDataset([sony_train_set, nikon_train_set])
+  val_set = torch.utils.data.ConcatDataset([sony_val_set, nikon_val_set])
 
   train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True,
                             num_workers=6, pin_memory=True)
